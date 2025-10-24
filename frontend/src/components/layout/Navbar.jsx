@@ -39,11 +39,15 @@ const Navbar = () => {
   });
 
   // console.log(notifications, connectionRequests);
+  const resolveArray = (maybe) => {
+    if (!maybe) return [];
+    if (Array.isArray(maybe)) return maybe;
+    if (Array.isArray(maybe.data)) return maybe.data;
+    return [];
+  };
 
-  const unreadNotificationCount = notifications?.data.filter(
-    (notif) => !notif.read
-  ).length;
-  const unreadConnectionRequestsCount = connectionRequests?.data?.length;
+  const unreadNotificationCount = resolveArray(notifications).filter((notif) => !notif.read).length;
+  const unreadConnectionRequestsCount = resolveArray(connectionRequests).length;
 
   // read message unread count from react-query cache (updated by ChatLayout)
   const { data: unreadMessagesCount } = useQuery({

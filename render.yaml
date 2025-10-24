@@ -1,0 +1,40 @@
+# Render service configuration for one-click deploy
+# This defines two services: a static site for the frontend and a web service for the backend.
+# After creating this file, go to Render and connect your GitHub repository and choose "Deploy from render.yaml".
+
+services:
+  - type: static_site
+    name: campus-connect-frontend
+    env: node
+    plan: free
+    region: oregon
+    buildCommand: |
+      npm ci
+      npm run build
+    publishPath: ./dist
+    # Root directory for this service is the frontend folder
+    root: frontend
+
+  - type: web_service
+    name: campus-connect-backend
+    env: node
+    plan: free
+    region: oregon
+    # Use Node 20 as required by package.json engines
+    environment: node
+    buildCommand: |
+      cd backend
+      npm ci
+    startCommand: cd backend && npm start
+    healthCheckPath: /api/health
+    # Set the environment variables in the Render dashboard (do NOT commit secrets here)
+    envVars:
+      - key: MONGO_URI
+        scope: env
+        # value: ""
+      - key: JWT_SECRET
+        scope: env
+        # value: ""
+      - key: PORT
+        scope: env
+        value: "5000"

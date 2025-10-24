@@ -21,6 +21,15 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 dotenv.config();
+// Validate required environment variables early to provide a clear error during deploy/startup
+const requiredEnv = ['MONGO_URI', 'JWT_SECRET'];
+const missing = requiredEnv.filter(k => !process.env[k]);
+if (missing.length) {
+  console.error(`Missing required environment variables: ${missing.join(', ')}`);
+  console.error('Please copy backend/.env.example to backend/.env and fill the values, or set the environment variables in your hosting platform.');
+  // exit with non-zero code so deploys fail fast and do not start with missing secrets
+  process.exit(1);
+}
 const PORT = process.env.PORT || 5000;
 
 const app = express();
@@ -42,6 +51,20 @@ app.use(cookieParser());
 
 app.use(express.static(path.join(__dirname, "../../frontend/dist")));
 
+// Health endpoint for platform health checks
+app.get('/api/health', async (req, res) => {
+  try {
+    // Use mongoose connection state if available
+    const mongoose = (await import('mongoose')).default;
+    const state = mongoose.connection && mongoose.connection.readyState;
+    // readyState: 0 = disconnected, 1 = connected, 2 = connecting, 3 = disconnecting
+    const dbConnected = state === 1;
+    return res.json({ ok: true, dbConnected, readyState: state });
+  } catch (err) {
+    return res.json({ ok: true, dbConnected: false, error: String(err) });
+  }
+});
+
 //!Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
@@ -56,8 +79,25 @@ import searchRoute from './routes/search.route.js';
 app.use('/api/search', searchRoute);
 // Interview-prep routes removed
 
+import fs from 'fs';
+
 app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "../../frontend/dist", "index.html"));
+  const indexPath = path.join(__dirname, "../../frontend/dist", "index.html");
+  if (fs.existsSync(indexPath)) {
+    return res.sendFile(indexPath);
+  }
+  // If frontend isn't built, return a helpful message instead of throwing ENOENT.
+  console.warn('Frontend build not found at', indexPath);
+  return res.status(200).send(`
+    <html>
+      <head><title>ProConnect - Not Built</title></head>
+      <body style="font-family: Arial, sans-serif; padding: 40px;">
+        <h1>Frontend not built</h1>
+        <p>The server is running but the frontend build is missing.</p>
+        <p>Run <code>cd frontend && npm install && npm run build</code> locally, or ensure your deployment build step builds the frontend.</p>
+      </body>
+    </html>
+  `);
 });
 
 // create http server and socket.io
@@ -77,6 +117,10 @@ io.use((socket, next) => {
   const token = socket.handshake.auth?.token || socket.handshake.query?.token;
   if (!token) return next();
   try {
+    if (!process.env.JWT_SECRET) {
+      console.warn('JWT_SECRET not set — socket auth skipped');
+      return next();
+    }
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     socket.userId = decoded.id;
     return next();
@@ -93,7 +137,8 @@ io.on('connection', (socket) => {
     // update DB
     User.findByIdAndUpdate(uid, { isOnline: true }, { new: true }).exec();
     // broadcast online status
-    io.emit('userOnline', { userId: uid });
+      // emit the userId string (client expects a simple id)
+      io.emit('userOnline', String(uid));
 
     // join a room for the user for private emits
     socket.join(uid.toString());
@@ -157,7 +202,7 @@ io.on('connection', (socket) => {
       // update lastSeen + offline
       await User.findByIdAndUpdate(uid, { isOnline: false, lastSeen: new Date() }).exec();
       // broadcast offline
-      io.emit('userOffline', { userId: uid, lastSeen: new Date() });
+  io.emit('userOffline', String(uid));
     }
   });
 });

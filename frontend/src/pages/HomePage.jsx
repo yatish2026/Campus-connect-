@@ -36,10 +36,10 @@ const HomePage = () => {
       {/* Feed main column */}
       <div className="col-span-1 lg:col-span-2 order-first lg:order-none">
         <PostCreation user={authUser} />
-        {posts?.map((post) => (
+        {(Array.isArray(posts) ? posts : []).map((post) => (
           <Post key={post._id} post={post} />
         ))}
-        {posts?.length === 0 && (
+        {(!(Array.isArray(posts)) || posts.length === 0) && (
           <div className="bg-white rounded-lg shadow p-8 text-center">
             <div className="mb-6">
               <Users size={64} className="mx-auto text-blue-500" />

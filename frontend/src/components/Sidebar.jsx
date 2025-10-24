@@ -2,26 +2,30 @@ import { Link } from "react-router-dom";
 import { Home, UserPlus, Bell } from "lucide-react";
 
 export default function Sidebar({ user }) {
+  const u = user || {};
+  const profilePath = u.username || u._id || '';
+  const connectionsCount = Array.isArray(u.connections) ? u.connections.length : 0;
+
   return (
     <div className="bg-secondary rounded-lg shadow">
       <div className="p-4 text-center">
         <div
           className="h-16 rounded-t-lg bg-cover bg-center"
           style={{
-            backgroundImage: `url("${user.bannerImg || "/banner.png"}")`,
+            backgroundImage: `url("${u.bannerImg || "/banner.png"}")`,
           }}
         />
-        <Link to={`/profile/${encodeURIComponent(user.username)}`}>
+        <Link to={`/profile/${encodeURIComponent(String(profilePath))}`}>
           <img
-            src={user.profilePicture || "/avatar.png"}
-            alt={user.name}
+            src={u.profilePicture || "/avatar.png"}
+            alt={u.name || 'User'}
             className="w-20 h-20 rounded-full mx-auto mt-[-40px]"
           />
-          <h2 className="text-xl font-semibold mt-2">{user.name}</h2>
+          <h2 className="text-xl font-semibold mt-2">{u.name || 'User'}</h2>
         </Link>
-        <p className="text-info">{user.headline}</p>
+        <p className="text-info">{u.headline || ''}</p>
         <p className="text-info text-xs">
-          {user.connections.length} connections
+          {connectionsCount} connections
         </p>
       </div>
       <div className="border-t border-base-100 p-4">
@@ -56,7 +60,7 @@ export default function Sidebar({ user }) {
       </div>
       <div className="border-t border-base-100 p-4">
         <Link
-          to={`/profile/${encodeURIComponent(user.username)}`}
+          to={`/profile/${encodeURIComponent(String(profilePath))}`}
           className="text-sm font-semibold"
         >
           Visit your profile
