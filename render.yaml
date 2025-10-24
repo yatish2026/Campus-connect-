@@ -2,7 +2,7 @@
 # Use this when you want to deploy only the backend as a Render web service.
 
 services:
-  - type: web_service
+  - type: web
     name: campus-connect-backend
     env: node
     plan: free
