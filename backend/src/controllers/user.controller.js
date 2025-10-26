@@ -55,6 +55,10 @@ export const updateProfile = async (req, res) => {
       "skills",
       "experience",
       "education",
+      // allow social links and projects to be updated from profile edit
+      "linkedin",
+      "github",
+      "projects",
     ];
 
     const updatedData = {};

@@ -12,7 +12,8 @@ export default {
       {
         "Campus Connect": {
           primary: "#0A66C2", // Campus Connect Blue (keeps existing palette)
-          secondary: "#FFFFFF",
+          // changed from white to a light orange for the main navbar background
+          secondary: "#FFEDD5",
           accent: "#7FC15E",
           neutral: "#000000",
           "base-100": "#F3F2EF",

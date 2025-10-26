@@ -28,6 +28,15 @@ const userSchema = new mongoose.Schema({
       endYear: Number,
     },
   ],
+  linkedin: { type: String, default: "" },
+  github: { type: String, default: "" },
+  projects: [
+    {
+      title: String,
+      description: String,
+      url: String,
+    },
+  ],
   connections: [
     {
       type: mongoose.Schema.Types.ObjectId,

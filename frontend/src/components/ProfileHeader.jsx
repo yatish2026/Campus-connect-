@@ -160,13 +160,12 @@ const ProfileHeader = ({ userData, onSave, isOwnProfile }) => {
   };
 
   return (
-    <div className="bg-white shadow rounded-lg mb-6">
+    <div className="bg-white shadow rounded-lg mb-6 transition-shadow hover:shadow-lg">
       <div
         className="relative h-48 rounded-t-lg bg-cover bg-center"
         style={{
-          backgroundImage: `url('${
-            editedData.bannerImg || userData.bannerImg || "/banner.png"
-          }')`,
+          backgroundImage: `url('${editedData.bannerImg || userData.bannerImg || "/banner.png"
+            }')`,
         }}
       >
         {isEditing && (
@@ -249,6 +248,40 @@ const ProfileHeader = ({ userData, onSave, isOwnProfile }) => {
               />
             ) : (
               <span className="text-gray-600">{userData.location}</span>
+            )}
+          </div>
+          {/* Social links */}
+          <div className="mt-3 flex justify-center items-center gap-4 text-sm">
+            {isEditing ? (
+              <>
+                <input
+                  type="url"
+                  placeholder="LinkedIn URL"
+                  value={editedData.linkedin ?? userData.linkedin ?? ""}
+                  onChange={(e) => setEditedData({ ...editedData, linkedin: e.target.value })}
+                  className="input input-sm w-48"
+                />
+                <input
+                  type="url"
+                  placeholder="GitHub URL"
+                  value={editedData.github ?? userData.github ?? ""}
+                  onChange={(e) => setEditedData({ ...editedData, github: e.target.value })}
+                  className="input input-sm w-48"
+                />
+              </>
+            ) : (
+              <>
+                {userData.linkedin && (
+                  <a href={userData.linkedin} target="_blank" rel="noreferrer" className="text-primary hover:underline">
+                    LinkedIn
+                  </a>
+                )}
+                {userData.github && (
+                  <a href={userData.github} target="_blank" rel="noreferrer" className="text-primary hover:underline">
+                    GitHub
+                  </a>
+                )}
+              </>
             )}
           </div>
         </div>

@@ -2,6 +2,7 @@ import { sendCommentNotificationEmail } from "../emails/emailHandlers.js";
 import cloudinary from "../lib/cloudinary.js";
 import Notification from "../models/notification.model.js";
 import Post from "../models/post.model.js";
+import User from "../models/user.model.js";
 import Club from '../models/club.model.js';
 
 export const getFeedPosts = async (req, res) => {
@@ -130,6 +131,24 @@ export const getPostById = async (req, res) => {
   } catch (error) {
     console.error("Error in getPostById controller:", error);
     res.status(500).json({ message: "Server error" });
+  }
+};
+
+export const getPostsByUser = async (req, res) => {
+  try {
+    const username = req.params.username;
+    const user = await User.findOne({ username }).select("_id");
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    const posts = await Post.find({ author: user._id })
+      .populate("author", "name username profilePicture headline")
+      .populate("comments.user", "name profilePicture")
+      .sort({ createdAt: -1 });
+
+    return res.status(200).json(posts);
+  } catch (error) {
+    console.error("Error in getPostsByUser controller:", error);
+    return res.status(500).json({ message: "Server error" });
   }
 };
 

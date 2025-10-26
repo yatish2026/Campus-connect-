@@ -7,6 +7,8 @@ import AboutSection from "../components/AboutSection";
 import ExperienceSection from "../components/ExperienceSection";
 import EducationSection from "../components/EducationSection";
 import SkillsSection from "../components/SkillsSection";
+import ProjectsSection from "../components/ProjectsSection";
+import Post from "../components/Post";
 
 const ProfilePage = () => {
   const params = useParams();
@@ -46,6 +48,16 @@ const ProfilePage = () => {
         throw err;
       }
     },
+  });
+
+  // fetch posts for the profile user (hook must be called unconditionally to preserve hook order)
+  const { data: userPosts, isLoading: isLoadingPosts } = useQuery({
+    queryKey: ["userPosts", decodedParam],
+    queryFn: async () => {
+      const res = await axiosInstance.get(`/posts/user/${encodeURIComponent(decodedParam)}`);
+      return res.data;
+    },
+    enabled: !!decodedParam,
   });
 
   const { mutate: updateProfile } = useMutation({
@@ -111,6 +123,11 @@ const ProfilePage = () => {
         isOwnProfile={isOwnProfile}
         onSave={(updatedData) => updateProfile(updatedData)}
       />
+      <ProjectsSection
+        userData={userData}
+        isOwnProfile={isOwnProfile}
+        onSave={(updatedData) => updateProfile(updatedData)}
+      />
       <AboutSection
         userData={userData}
         isOwnProfile={isOwnProfile}
@@ -131,6 +148,18 @@ const ProfilePage = () => {
         isOwnProfile={isOwnProfile}
         onSave={(updatedData) => updateProfile(updatedData)}
       />
+
+      {/* User's posts */}
+      <div className="mt-6">
+        <h2 className="text-xl font-semibold mb-3">Posts</h2>
+        {isLoadingPosts ? (
+          <p>Loading posts...</p>
+        ) : userPosts && userPosts.length > 0 ? (
+          userPosts.map((p) => <Post key={p._id} post={p} />)
+        ) : (
+          <p className="text-sm text-gray-600">No posts yet</p>
+        )}
+      </div>
     </div>
   );
 };

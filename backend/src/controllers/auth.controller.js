@@ -104,3 +104,61 @@ export const getCurrentUser = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
+export const googleAuth = async (req, res) => {
+  try {
+    const { credential } = req.body;
+    
+    if (!credential) {
+      return res.status(400).json({ message: "Google credential is required" });
+    }
+
+    // Verify the Google token
+    const response = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${credential}`);
+    
+    if (!response.ok) {
+      return res.status(401).json({ message: "Invalid Google credential" });
+    }
+
+    const tokenInfo = await response.json();
+
+    // Find or create user
+    let user = await User.findOne({ email: tokenInfo.email });
+    
+    if (!user) {
+      // Create new user from Google data
+      user = new User({
+        name: tokenInfo.name,
+        email: tokenInfo.email,
+        username: tokenInfo.email.split('@')[0],
+        avatar: tokenInfo.picture,
+        // Set a random password since we're using Google auth
+        password: await bcrypt.hash(Math.random().toString(36), 10),
+      });
+      await user.save();
+    }
+
+    // Create JWT
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
+      expiresIn: "3d",
+    });
+
+    // Set cookie
+    res.cookie("jwt-ProConnect", token, {
+      httpOnly: true,
+      maxAge: 3 * 24 * 60 * 60 * 1000,
+      sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+      secure: process.env.NODE_ENV === "production",
+    });
+
+    // Send response with user data and token
+    res.status(200).json({
+      message: "Google authentication successful",
+      user,
+      token
+    });
+  } catch (error) {
+    console.error('Google auth error:', error);
+    res.status(500).json({ message: "Google authentication failed" });
+  }
+};

@@ -20,28 +20,31 @@ const SignUpForm = () => {
       return toast.error("Google signup failed: no credential received");
     }
     try {
-      const res = await axiosInstance.post("/auth/google", { credential: credentialResponse.credential });
-      const { token } = res.data;
+      const res = await axiosInstance.post("/auth/google", {
+        credential: credentialResponse.credential
+      });
+
+      const { token, user } = res.data;
+
       if (token) {
         localStorage.setItem("token", token);
-        // Optimistically set authUser cache so the app will show the home page right away
-        if (res.data.user) {
-          queryClient.setQueryData(["authUser"], res.data.user);
+
+        // Update the axios instance authorization header
+        axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+
+        // Update the auth user in React Query cache
+        if (user) {
+          queryClient.setQueryData(["authUser"], user);
         } else {
           queryClient.invalidateQueries({ queryKey: ["authUser"] });
         }
-        // Ensure axios will send Authorization header immediately
-        try {
-          axiosInstance.defaults.headers.Authorization = `Bearer ${token}`;
-        } catch (e) {
-          // ignore
-        }
-        toast.success("Account created with Google");
-        navigate("/");
+
+        toast.success("Successfully signed in with Google");
+        navigate("/home");
       }
     } catch (err) {
-      console.error(err);
-      toast.error(err.response?.data?.message || "Google signup failed");
+      console.error("Google auth error:", err);
+      toast.error(err.response?.data?.message || "Failed to sign in with Google");
     }
   };
 
