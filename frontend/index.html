@@ -4,7 +4,20 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ProConnect</title>
+    <title>Campus Connect</title>
+    <script>
+      // Apply saved theme early to avoid flicker.
+      // Default to dark mode unless the user explicitly saved 'light'.
+      try {
+        const t = localStorage.getItem('cc_theme');
+        if (t === 'light') {
+          document.documentElement.classList.remove('dark');
+        } else {
+          // if t is 'dark' or null/undefined -> use dark by default
+          document.documentElement.classList.add('dark');
+        }
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>

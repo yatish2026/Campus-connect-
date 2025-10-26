@@ -1,3 +1,39 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+:root {
+	--cc-primary: #2563eb; /* primary blue */
+	--cc-darkblue: #0b2940; /* new dark blue accent */
+	--cc-accent: #1e293b; /* accent */
+	--cc-bg: #e6f3ff; /* page background now light-blue in light mode */
+	--cc-surface: #e6f3ff; /* light blue surface for light mode */
+	--cc-text: #111827;
+}
+
+.dark {
+	--cc-primary: #1e40af; /* slightly darker primary in dark mode */
+	--cc-darkblue: #061529;
+	--cc-accent: #cbd5e1;
+	--cc-bg: #071025;
+	--cc-surface: #042b38; /* surface in dark mode */
+	--cc-text: #f8fafc;
+}
+
+.bg-cc-primary { background-color: var(--cc-primary); }
+.bg-cc-darkblue { background-color: var(--cc-darkblue); }
+.text-cc-accent { color: var(--cc-accent); }
+.text-cc { color: var(--cc-text); }
+.bg-cc-bg { background-color: var(--cc-bg); }
+
+.bg-cc-surface { background-color: var(--cc-surface); }
+
+.btn-cc-primary {
+	background-color: var(--cc-primary);
+}
+.btn-cc-primary:hover { filter: brightness(0.95); }
+
+.card-gradient-blue { background: linear-gradient(135deg, rgba(37,99,235,0.08) 0%, rgba(199,210,254,0.04) 100%); }
+.card-gradient-green { background: linear-gradient(135deg, rgba(16,185,129,0.06) 0%, rgba(236,253,245,0.02) 100%); }
+.card-gradient-rose { background: linear-gradient(135deg, rgba(251,207,232,0.06) 0%, rgba(255,245,232,0.02) 100%); }
+

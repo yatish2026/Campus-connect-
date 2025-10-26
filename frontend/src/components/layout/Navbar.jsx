@@ -1,5 +1,6 @@
 import React from 'react';
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { axiosInstance } from "../../lib/axios";
 import { Link } from "react-router-dom";
 import { Bell, Home, LogOut, User, Users, MessageSquare, BookOpen } from "lucide-react";
@@ -30,11 +31,25 @@ const Navbar = () => {
     queryFn: async () => axiosInstance.get("/connections/requests"),
     enabled: !!authUser,
   });
+  const navigate = useNavigate();
 
   const { mutate: logout } = useMutation({
     mutationFn: () => axiosInstance.post("/auth/logout"),
     onSuccess: () => {
+      // Clear any client-side JWT (used by Google sign-in flow) and refresh auth state
+      try {
+        localStorage.removeItem("token");
+      } catch (e) {
+        // ignore
+      }
+      try {
+        // remove Authorization header immediately so subsequent requests don't include stale token
+        delete axiosInstance.defaults.headers.Authorization;
+      } catch (e) {
+        // ignore
+      }
       queryClient.invalidateQueries({ queryKey: ["authUser"] });
+      navigate("/login");
     },
   });
 
@@ -81,13 +96,14 @@ const Navbar = () => {
       <nav className="bg-secondary shadow-md sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex justify-between items-center py-3">
-            <div className="flex items-center space-x-4">
-              <Link to="/">
+            <div className="flex items-center space-x-3">
+              <Link to="/" className="flex items-center gap-2">
                 <img
-                  className="h-8 rounded"
-                  src="/small-logo.png"
-                  alt="ProConnect"
+                  className="h-8 w-8"
+                  src="/campus-connect-logo.svg"
+                  alt="Campus Connect"
                 />
+                <span className="text-lg font-semibold hidden sm:inline">Campus Connect</span>
               </Link>
             </div>
             <div className="flex items-center gap-2 md:gap-6">

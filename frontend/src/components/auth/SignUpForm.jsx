@@ -3,6 +3,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { axiosInstance } from "../../lib/axios.js";
 import { toast } from "react-hot-toast";
 import { Loader } from "lucide-react";
+import { GoogleLogin } from "@react-oauth/google";
+import { useNavigate } from "react-router-dom";
 
 const SignUpForm = () => {
   const [name, setName] = useState("");
@@ -11,6 +13,41 @@ const SignUpForm = () => {
   const [password, setPassword] = useState("");
 
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
+
+  const handleGoogleSuccess = async (credentialResponse) => {
+    if (!credentialResponse?.credential) {
+      return toast.error("Google signup failed: no credential received");
+    }
+    try {
+      const res = await axiosInstance.post("/auth/google", { credential: credentialResponse.credential });
+      const { token } = res.data;
+      if (token) {
+        localStorage.setItem("token", token);
+        // Optimistically set authUser cache so the app will show the home page right away
+        if (res.data.user) {
+          queryClient.setQueryData(["authUser"], res.data.user);
+        } else {
+          queryClient.invalidateQueries({ queryKey: ["authUser"] });
+        }
+        // Ensure axios will send Authorization header immediately
+        try {
+          axiosInstance.defaults.headers.Authorization = `Bearer ${token}`;
+        } catch (e) {
+          // ignore
+        }
+        toast.success("Account created with Google");
+        navigate("/");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error(err.response?.data?.message || "Google signup failed");
+    }
+  };
+
+  const handleGoogleError = () => {
+    toast.error("Google sign-in was not successful");
+  };
 
   const handleSignUp = (e) => {
     e.preventDefault();
@@ -76,6 +113,9 @@ const SignUpForm = () => {
           "Agree & Join"
         )}
       </button>
+      <div className="mt-4 flex justify-center">
+        <GoogleLogin onSuccess={handleGoogleSuccess} onError={handleGoogleError} />
+      </div>
     </form>
   );
 };

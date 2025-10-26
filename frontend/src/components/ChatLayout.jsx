@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocation } from 'react-router-dom';
-import { Search, Send, Paperclip, Smile } from 'lucide-react';
+import { Search, Send, Paperclip, Smile, Copy, Trash2, CornerUpLeft } from 'lucide-react';
 import { axiosInstance } from '../lib/axios';
 import { initSocket, getSocket } from '../lib/socket';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -16,11 +16,13 @@ export default function ChatLayout() {
   const [activeId, setActiveId] = useState(null);
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState('');
+  const inputRef = useRef(null);
   const [typing, setTyping] = useState(false);
   const [search, setSearch] = useState('');
   const [onlineMap, setOnlineMap] = useState({});
   const [emojiOpen, setEmojiOpen] = useState(false);
   const [fileUploading, setFileUploading] = useState(false);
+  const [replyTo, setReplyTo] = useState(null);
   const messagesEndRef = useRef(null);
   const socketRef = useRef(null);
   const INJECTED_KEY = 'app_injected_conversations_v1';
@@ -352,7 +354,28 @@ export default function ChatLayout() {
   };
 
   const toggleEmoji = () => setEmojiOpen(v => !v);
-  const pickEmoji = (emoji) => setText(t => t + emoji);
+  const pickEmoji = (emoji) => {
+    // insert emoji at current caret position in the input
+    try {
+      const el = inputRef.current;
+      if (el && typeof el.selectionStart === 'number') {
+        const start = el.selectionStart;
+        const end = el.selectionEnd;
+        const before = text.slice(0, start);
+        const after = text.slice(end);
+        const next = before + emoji + after;
+        setText(next);
+        // set caret after inserted emoji on next tick
+        requestAnimationFrame(() => {
+          try { el.selectionStart = el.selectionEnd = start + emoji.length; el.focus(); } catch (e) { }
+        });
+        return;
+      }
+    } catch (e) {
+      // fallback
+    }
+    setText(t => t + emoji);
+  };
 
   const fetchSuggestions = async () => {
     try {
@@ -426,8 +449,34 @@ export default function ChatLayout() {
     }
   }, [location.search]);
 
+  const handleCopy = async (text) => {
+    try {
+      if (!text) return;
+      await navigator.clipboard.writeText(text);
+    } catch (e) {
+      console.error('copy failed', e);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    try {
+      await axiosInstance.delete(`/messages/${id}`);
+      setMessages((m) => m.filter(x => x.id !== id));
+    } catch (e) {
+      console.error('delete message', e);
+    }
+  };
+
+  const handleReply = (msg) => {
+    setReplyTo(msg);
+    const mention = msg.senderName ? `@${msg.senderName} ` : '';
+    setText((t) => (mention + t));
+    // focus input
+    requestAnimationFrame(() => inputRef.current?.focus());
+  };
+
   return (
-    <div className="h-screen w-full flex bg-gray-50 font-sans">
+    <div className="h-screen w-full flex bg-gradient-to-br from-slate-50 to-white font-sans">
       {/* Left Sidebar */}
       <aside className="w-80 min-w-[280px] max-w-[320px] border-r bg-white p-4 flex flex-col">
         <div className="flex items-center gap-3 mb-4">
@@ -523,7 +572,7 @@ export default function ChatLayout() {
                 const gap = prev ? (new Date(msg.time) - new Date(prev.time)) : Infinity;
                 const isNewGroup = !prev || prev.fromMe !== msg.fromMe || gap > 2 * 60 * 1000; // 2 minutes
                 return (
-                  <div key={msg.id}>
+                  <div key={msg.id} className="group">
                     {isNewGroup && (
                       <div className={`flex ${msg.fromMe ? 'justify-end' : 'justify-start'} mb-1 items-center`}>
                         {!msg.fromMe && (
@@ -539,8 +588,23 @@ export default function ChatLayout() {
                       </div>
                     )}
                     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.16 }} className={`flex ${msg.fromMe ? 'justify-end' : 'justify-start'}`}>
-                      <div className={`inline-block p-3 rounded-2xl shadow-sm ${msg.fromMe ? 'bg-blue-600 text-white' : 'bg-white text-gray-800'}`} style={{ maxWidth: '70%' }}>
-                        <div className="text-sm whitespace-pre-wrap">{msg.text}{msg.fileUrl && <a href={msg.fileUrl} target="_blank" rel="noreferrer" className="ml-2 underline">{msg.fileName || 'file'}</a>}</div>
+                      <div className={`relative inline-block p-3 rounded-2xl shadow-sm ${msg.fromMe ? 'bg-blue-600 text-white' : 'bg-white text-gray-800'}`} style={{ maxWidth: '70%' }}>
+                        {/* action buttons (copy, reply, delete) - appear on hover */}
+                        <div className="absolute -top-6 right-0 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 z-40">
+                          <button title="Copy" onClick={() => handleCopy(msg.fileUrl || msg.text)} className="p-1 rounded bg-white/10 hover:bg-white/20 text-xs"><Copy size={14} /></button>
+                          <button title="Reply" onClick={() => handleReply(msg)} className="p-1 rounded bg-white/10 hover:bg-white/20 text-xs"><CornerUpLeft size={14} /></button>
+                          {msg.fromMe && <button title="Delete" onClick={() => handleDelete(msg.id)} className="p-1 rounded bg-red-500 hover:bg-red-600 text-white"><Trash2 size={14} /></button>}
+                        </div>
+                        <div className="text-sm whitespace-pre-wrap">
+                          {msg.fileUrl ? (
+                            <>
+                              <a href={msg.fileUrl} target="_blank" rel="noreferrer" className={`underline ${msg.fromMe ? 'text-white' : ''}`}>{msg.fileName || 'file'}</a>
+                              {msg.text && msg.text !== msg.fileName ? <div className="text-xs text-gray-200 mt-1">{msg.text}</div> : null}
+                            </>
+                          ) : (
+                            msg.text
+                          )}
+                        </div>
                         <div className="text-[11px] text-gray-400 mt-1 text-right">{new Date(msg.time || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
                       </div>
                     </motion.div>
@@ -566,11 +630,23 @@ export default function ChatLayout() {
         {/* Input area */}
         <footer className="p-4 border-t bg-white">
           <div className="max-w-3xl mx-auto flex items-center gap-3">
+            {/* Reply preview */}
+            {replyTo && (
+              <div className="absolute left-1/2 transform -translate-x-1/2 -translate-y-12 bg-white border rounded-lg px-3 py-2 shadow-md w-96 z-50 flex justify-between items-start">
+                <div className="text-xs text-gray-600">
+                  Replying to <span className="font-semibold">{replyTo.senderName || 'Unknown'}</span>
+                  <div className="text-[12px] text-gray-500 truncate">{replyTo.text || replyTo.fileName || ''}</div>
+                </div>
+                <button onClick={() => setReplyTo(null)} className="text-xs text-red-500">Cancel</button>
+              </div>
+            )}
             <div className="relative">
               <button aria-label="Emoji picker" onClick={toggleEmoji} className="p-2 rounded-full hover:bg-gray-100 transition"><Smile size={18} /></button>
               {emojiOpen && (
-                <div className="absolute bottom-12 left-0 bg-white border rounded-lg p-2 shadow-md grid grid-cols-6 gap-1">
-                  {EMOJIS.map(e => <button key={e} onClick={() => { pickEmoji(e); setEmojiOpen(false); }} className="p-1 hover:bg-gray-100 rounded">{e}</button>)}
+                <div className="absolute bottom-12 left-0 bg-white border rounded-lg p-2 shadow-md grid grid-cols-5 gap-2 z-50 w-48">
+                  {EMOJIS.map(e => (
+                    <button key={e} onClick={() => { pickEmoji(e); setEmojiOpen(false); }} className="w-8 h-8 flex items-center justify-center text-lg p-1 hover:bg-gray-100 rounded">{e}</button>
+                  ))}
                 </div>
               )}
             </div>
@@ -580,7 +656,7 @@ export default function ChatLayout() {
               <Paperclip size={18} />
             </label>
 
-            <input aria-label="Message input" value={text} onChange={e => setText(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') sendMessage(); }} placeholder="Write a message..." className="flex-1 px-4 py-2 rounded-2xl bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-300" />
+            <input ref={inputRef} aria-label="Message input" value={text} onChange={e => setText(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') sendMessage(); }} placeholder="Write a message..." className="flex-1 px-4 py-2 rounded-2xl bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-300" />
             <button onClick={sendMessage} aria-label="Send message" className="ml-2 bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-2xl transition flex items-center gap-2"><Send size={16} /></button>
           </div>
         </footer>

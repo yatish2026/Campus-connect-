@@ -20,7 +20,8 @@ const NotificationsPage = () => {
 
   const { data: notifications, isLoading } = useQuery({
     queryKey: ["notifications"],
-    queryFn: () => axiosInstance.get("/notifications"),
+    // normalize axios response to return the actual notifications array
+    queryFn: () => axiosInstance.get("/notifications").then((res) => res.data),
   });
 
   const { mutate: markAsReadMutation } = useMutation({
@@ -57,17 +58,21 @@ const NotificationsPage = () => {
       case "like":
         return (
           <span>
-            <strong>{notification.relatedUser.name}</strong> liked your post
+            <strong>{notification.relatedUser?.name || "Someone"}</strong> liked your post
           </span>
         );
       case "comment":
         return (
           <span>
             <Link
-              to={`/profile/${notification.relatedUser.username}`}
+              to={
+                notification.relatedUser
+                  ? `/profile/${notification.relatedUser.username}`
+                  : `#`
+              }
               className="font-bold"
             >
-              {notification.relatedUser.name}
+              {notification.relatedUser?.name || "Someone"}
             </Link>{" "}
             commented on your post
           </span>
@@ -76,10 +81,14 @@ const NotificationsPage = () => {
         return (
           <span>
             <Link
-              to={`/profile/${notification.relatedUser.username}`}
+              to={
+                notification.relatedUser
+                  ? `/profile/${notification.relatedUser.username}`
+                  : `#`
+              }
               className="font-bold"
             >
-              {notification.relatedUser.name}
+              {notification.relatedUser?.name || "Someone"}
             </Link>{" "}
             accepted your connection request
           </span>
@@ -125,26 +134,34 @@ const NotificationsPage = () => {
 
           {isLoading ? (
             <p>Loading notifications...</p>
-          ) : notifications && notifications.data.length > 0 ? (
+          ) : notifications && notifications.length > 0 ? (
             <ul>
-              {notifications.data.map((notification) => (
+              {notifications.map((notification) => (
                 <li
                   key={notification._id}
-                  className={`bg-white border rounded-lg p-4 my-4 transition-all hover:shadow-md ${
-                    !notification.read ? "border-blue-500" : "border-gray-200"
-                  }`}
+                  className={`bg-white border rounded-lg p-4 my-4 transition-all hover:shadow-md ${!notification.read ? "border-blue-500" : "border-gray-200"
+                    }`}
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex items-center space-x-4">
                       <Link
-                        to={`/profile/${notification.relatedUser.username}`}
+                        to={
+                          notification.relatedUser
+                            ? `/profile/${notification.relatedUser.username}`
+                            : `#`
+                        }
                       >
                         <img
                           src={
-                            notification.relatedUser.profilePicture ||
+                            (notification.relatedUser &&
+                              notification.relatedUser.profilePicture) ||
                             "/avatar.png"
                           }
-                          alt={notification.relatedUser.name}
+                          alt={
+                            (notification.relatedUser &&
+                              notification.relatedUser.name) ||
+                            "User"
+                          }
                           className="w-12 h-12 rounded-full object-cover"
                         />
                       </Link>

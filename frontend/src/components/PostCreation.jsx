@@ -96,13 +96,16 @@ const PostCreation = ({ user, selectedClubFromParent, onCreated }) => {
           onChange={(e) => setContent(e.target.value)}
         />
       </div>
-      {myClubs?.length > 0 && (
+      {myClubs?.length > 0 && !selectedClubFromParent && (
         <div className="mt-3">
           <select className="p-2 rounded w-full sm:w-auto" value={selectedClub || ''} onChange={e => setSelectedClub(e.target.value || null)}>
             <option value="">Post as yourself</option>
-            {myClubs.map(c => <option key={c._id} value={c._1}>{c.name}</option>)}
+            {myClubs.map(c => <option key={c._id} value={c._id}>{c.name}</option>)}
           </select>
         </div>
+      )}
+      {selectedClubFromParent && (
+        <div className="mt-3 text-sm text-gray-600">Posting to this club</div>
       )}
 
       {imagePreview && (

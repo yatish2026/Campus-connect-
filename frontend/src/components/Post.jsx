@@ -105,7 +105,7 @@ const Post = ({ post }) => {
       // Web Share API
       if (navigator.share) {
         await navigator.share({
-          title: post.title || 'ProConnect Post',
+          title: post.title || 'Campus Connect Post',
           text: shareText,
           url,
         });
