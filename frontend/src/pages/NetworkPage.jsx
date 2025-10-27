@@ -10,12 +10,26 @@ const NetworkPage = () => {
 
   const { data: connectionRequests } = useQuery({
     queryKey: ["connectionRequests"],
-    queryFn: () => axiosInstance.get("/connections/requests"),
+    queryFn: async () => {
+      try {
+        const res = await axiosInstance.get("/connections/requests");
+        return res.data;
+      } catch (err) {
+        return [];
+      }
+    },
   });
 
   const { data: connections } = useQuery({
     queryKey: ["connections"],
-    queryFn: () => axiosInstance.get("/connections"),
+    queryFn: async () => {
+      try {
+        const res = await axiosInstance.get("/connections");
+        return res.data;
+      } catch (err) {
+        return [];
+      }
+    },
   });
 
   const { data: suggestions } = useQuery({
@@ -36,7 +50,7 @@ const NetworkPage = () => {
   const suggestedList = (() => {
     try {
       const items = suggestions || [];
-      const connIds = new Set((connections?.data || []).map((c) => c._id));
+      const connIds = new Set((connections || []).map((c) => c._id));
       return items.filter((s) => s._id !== user?._id && !connIds.has(s._id)).slice(0, 12);
     } catch (err) {
       return [];
@@ -52,12 +66,12 @@ const NetworkPage = () => {
         <div className="bg-secondary rounded-lg shadow p-6 mb-6">
           <h1 className="text-2xl font-bold mb-6">My Network</h1>
 
-          {connectionRequests?.data?.length > 0 ? (
+          {connectionRequests?.length > 0 ? (
             <div className="mb-8">
               <h2 className="text-xl font-semibold mb-2">Connection Request</h2>
               <div className="space-y-4">
-                {connectionRequests.data.map((request) => (
-                  <FriendRequest key={request.id} request={request} />
+                {connectionRequests.map((request) => (
+                  <FriendRequest key={request._id} request={request} />
                 ))}
               </div>
             </div>
@@ -77,11 +91,11 @@ const NetworkPage = () => {
             </div>
           )}
           {/* My Connections (moved to top) */}
-          {connections?.data?.length > 0 && (
+          {connections?.length > 0 && (
             <div className="mb-8">
               <h2 className="text-xl font-semibold mb-4">My Connections</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {connections.data.map((connection) => (
+                {connections.map((connection) => (
                   <UserCard
                     key={connection._id}
                     user={connection}
