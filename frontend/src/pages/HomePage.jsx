@@ -16,6 +16,7 @@ const HomePage = () => {
       return res.data;
     },
   });
+  
   const { data: posts, isLoading: isLoadingPosts, error: postsError } = useQuery({
     queryKey: ["posts"],
     queryFn: async () => {
@@ -24,7 +25,6 @@ const HomePage = () => {
     },
   });
 
-  // console.log("recommendedUsers", recommendedUsers);
   console.log("posts", posts);
 
   return (
@@ -67,11 +67,11 @@ const HomePage = () => {
       </div>
 
       {/* On mobile, show recommendations below feed as a full-width section */}
-      {recommendedUsers?.length > 0 && (
+      {Array.isArray(recommendedUsers) && recommendedUsers.length > 0 && (
         <div className="col-span-1 lg:col-span-1">
           <div className="bg-secondary rounded-lg shadow p-4">
             <h2 className="font-semibold mb-4">People you may know</h2>
-            {recommendedUsers?.map((user) => (
+            {recommendedUsers.map((user) => (
               <RecommendedUser key={user._id} user={user} />
             ))}
           </div>
