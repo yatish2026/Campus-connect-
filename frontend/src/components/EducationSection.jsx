@@ -39,7 +39,7 @@ const EducationSection = ({ userData, isOwnProfile, onSave }) => {
   return (
     <div className="bg-white shadow rounded-lg p-6 mb-6">
       <h2 className="text-xl font-semibold mb-4">Education</h2>
-      {educations.map((edu) => (
+      {Array.isArray(educations) && educations.map((edu) => (
         <div key={edu._id} className="mb-4 flex justify-between items-start">
           <div className="flex items-start">
             <School size={20} className="mr-2 mt-1" />

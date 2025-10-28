@@ -67,8 +67,8 @@ const ProjectsSection = ({ userData, isOwnProfile, onSave }) => {
       )}
 
       <div className="space-y-3">
-        {projects.length === 0 && <p className="text-sm text-gray-600">No projects yet</p>}
-        {projects.map((p, i) => (
+        {(!projects || projects.length === 0) && <p className="text-sm text-gray-600">No projects yet</p>}
+        {Array.isArray(projects) && projects.map((p, i) => (
           <div key={i} className="p-3 bg-base-100 rounded">
             <div className="flex justify-between items-start">
               <div>

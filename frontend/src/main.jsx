@@ -7,7 +7,24 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import MessagesPage from './pages/MessagesPage';
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+      staleTime: 5 * 60 * 1000,
+      initialData: (context) => {
+        // Initialize arrays as empty arrays instead of undefined
+        if (context.queryKey.includes('userPosts') ||
+          context.queryKey.includes('projects') ||
+          context.queryKey.includes('education')) {
+          return [];
+        }
+        return undefined;
+      },
+    },
+  },
+});
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>

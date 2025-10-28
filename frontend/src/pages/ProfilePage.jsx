@@ -154,7 +154,7 @@ const ProfilePage = () => {
         <h2 className="text-xl font-semibold mb-3">Posts</h2>
         {isLoadingPosts ? (
           <p>Loading posts...</p>
-        ) : userPosts && userPosts.length > 0 ? (
+        ) : Array.isArray(userPosts) && userPosts.length > 0 ? (
           userPosts.map((p) => <Post key={p._id} post={p} />)
         ) : (
           <p className="text-sm text-gray-600">No posts yet</p>
