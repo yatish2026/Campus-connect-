@@ -3,7 +3,7 @@ import { axiosInstance } from "../lib/axios";
 import Sidebar from "../components/Sidebar";
 import PostCreation from "../components/PostCreation";
 import Post from "../components/Post";
-import { Users } from "lucide-react";
+import { Users, AlertCircle } from "lucide-react";
 import RecommendedUser from "../components/RecommendedUser";
 
 const HomePage = () => {
@@ -12,30 +12,68 @@ const HomePage = () => {
   const { data: recommendedUsers } = useQuery({
     queryKey: ["recommendedUsers"],
     queryFn: async () => {
-      const res = await axiosInstance.get("/users/suggestions");
-      return res.data;
+      try {
+        const res = await axiosInstance.get("/users/suggestions");
+        // Check if backend returned HTML (backend down)
+        if (typeof res.data === 'string' && res.data.includes('<!DOCTYPE html>')) {
+          console.error('Backend connection failed');
+          return [];
+        }
+        return Array.isArray(res.data) ? res.data : [];
+      } catch (error) {
+        console.error('Failed to fetch recommended users:', error);
+        return [];
+      }
     },
   });
   
   const { data: posts, isLoading: isLoadingPosts, error: postsError } = useQuery({
     queryKey: ["posts"],
     queryFn: async () => {
-      const res = await axiosInstance.get("/posts");
-      return res.data;
+      try {
+        const res = await axiosInstance.get("/posts");
+        // Check if backend returned HTML (backend down)
+        if (typeof res.data === 'string' && res.data.includes('<!DOCTYPE html>')) {
+          console.error('Backend connection failed');
+          return [];
+        }
+        return Array.isArray(res.data) ? res.data : [];
+      } catch (error) {
+        console.error('Failed to fetch posts:', error);
+        return [];
+      }
     },
   });
+
+  // Check if backend is down (returning HTML)
+  const isBackendDown = typeof posts === 'string' && posts.includes('<!DOCTYPE html>');
 
   console.log("posts", posts);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-      {/* Sidebar hidden on mobile; visible on lg+ */}
       <div className="hidden lg:block lg:col-span-1">
         <Sidebar user={authUser} />
       </div>
-      {/* Feed main column */}
+      
       <div className="col-span-1 lg:col-span-2 order-first lg:order-none">
         <PostCreation user={authUser} />
+        
+        {/* Show backend connection error */}
+        {isBackendDown && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+            <div className="flex items-center gap-3">
+              <AlertCircle className="text-yellow-600" size={24} />
+              <div>
+                <h3 className="font-semibold text-yellow-800">Backend Server Not Connected</h3>
+                <p className="text-yellow-700 text-sm">
+                  Please make sure your backend server is running on port 5000.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {isLoadingPosts ? (
           <div className="bg-white rounded-lg shadow p-4 text-center">
             <p>Loading posts...</p>
@@ -49,7 +87,7 @@ const HomePage = () => {
             {(Array.isArray(posts) ? posts : []).map((post) => (
               <Post key={post._id} post={post} />
             ))}
-            {(!(Array.isArray(posts)) || posts.length === 0) && (
+            {(!Array.isArray(posts) || posts.length === 0) && !isBackendDown && (
               <div className="bg-white rounded-lg shadow p-8 text-center">
                 <div className="mb-6">
                   <Users size={64} className="mx-auto text-blue-500" />
@@ -66,7 +104,7 @@ const HomePage = () => {
         )}
       </div>
 
-      {/* On mobile, show recommendations below feed as a full-width section */}
+      {/* Safe recommended users rendering */}
       {Array.isArray(recommendedUsers) && recommendedUsers.length > 0 && (
         <div className="col-span-1 lg:col-span-1">
           <div className="bg-secondary rounded-lg shadow p-4">
