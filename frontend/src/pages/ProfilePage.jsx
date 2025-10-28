@@ -26,6 +26,9 @@ const ProfilePage = () => {
     queryKey: ["userProfile", decodedParam],
     queryFn: async () => {
       try {
+        if (!decodedParam) {
+          return null;
+        }
         // If the param looks like an ObjectId, prefer the id endpoint
         if (isObjectId) {
           const res = await axiosInstance.get(`/users/id/${decodedParam}`);
@@ -45,19 +48,33 @@ const ProfilePage = () => {
           throw err;
         }
       } catch (err) {
+        console.error('Error fetching user profile:', err);
+        toast.error('Failed to load user profile');
         throw err;
       }
     },
+    retry: 2,
+    retryDelay: 1000,
   });
 
   // fetch posts for the profile user (hook must be called unconditionally to preserve hook order)
   const { data: userPosts = [], isLoading: isLoadingPosts } = useQuery({
     queryKey: ["userPosts", decodedParam],
     queryFn: async () => {
-      const res = await axiosInstance.get(`/posts/user/${encodeURIComponent(decodedParam)}`);
-      return res.data || [];
+      try {
+        if (!decodedParam) return [];
+        const res = await axiosInstance.get(`/posts/user/${encodeURIComponent(decodedParam)}`);
+        if (!res.data) return [];
+        return res.data || [];
+      } catch (err) {
+        console.error('Error fetching user posts:', err);
+        toast.error('Failed to load posts');
+        return [];
+      }
     },
     enabled: !!decodedParam,
+    retry: 2,
+    retryDelay: 1000,
   });
 
   const { mutate: updateProfile } = useMutation({
@@ -94,9 +111,26 @@ const ProfilePage = () => {
     }
   };
 
-  if (isLoading || isUserProfileLoading) return null;
+  if (isLoading || isUserProfileLoading) {
+    return <div className="max-w-4xl mx-auto p-4">
+      <div className="animate-pulse">
+        <div className="h-32 bg-gray-200 rounded-lg mb-4"></div>
+        <div className="h-20 bg-gray-200 rounded-lg mb-4"></div>
+        <div className="h-40 bg-gray-200 rounded-lg"></div>
+      </div>
+    </div>;
+  }
 
-  const isOwnProfile = authUser.username === userProfile.username;
+  if (!userProfile) {
+    return <div className="max-w-4xl mx-auto p-4">
+      <div className="text-center py-8">
+        <h2 className="text-2xl font-bold text-gray-800 mb-2">Profile Not Found</h2>
+        <p className="text-gray-600">The requested profile could not be found.</p>
+      </div>
+    </div>;
+  }
+
+  const isOwnProfile = authUser?.username === userProfile?.username;
 
   const userData = isOwnProfile ? authUser : userProfile;
 

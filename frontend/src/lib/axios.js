@@ -1,4 +1,5 @@
 import axios from 'axios';
+import toast from 'react-hot-toast';
 
 const resolveBaseURL = () => {
   // Allow explicit override at build time
@@ -26,6 +27,27 @@ instance.interceptors.request.use(config => {
   }
   return config;
 });
+// Add response interceptor for error handling
+instance.interceptors.response.use(
+  response => response,
+  error => {
+    if (error.message === 'Network Error') {
+      console.error('Backend connection failed:', error);
+      toast.error('Unable to connect to the server. Please try again later.');
+    } else if (error.response?.status === 401) {
+      // Handle unauthorized access
+      localStorage.removeItem('token');
+      window.location.href = '/login';
+    } else if (error.response?.status === 404) {
+      // Handle not found
+      console.error('Resource not found:', error);
+    } else {
+      // Handle other errors
+      console.error('API Error:', error);
+    }
+    return Promise.reject(error);
+  }
+);
 
 export const axiosInstance = instance;
 export default instance;
