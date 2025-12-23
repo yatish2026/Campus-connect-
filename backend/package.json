@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
-"scripts": {
+  "scripts": {
     "prestart": "echo 'Skipping frontend build in production'",
     "postinstall": "echo 'Skipping frontend build in production'",
     "start": "node src/server.js",
