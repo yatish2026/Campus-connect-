@@ -46,7 +46,7 @@ instance.interceptors.response.use(
       // should read this flag and perform navigation (or show a login UI).
       try {
         localStorage.removeItem('token');
-      } catch (e) {}
+      } catch (e) { }
       instance.__authFailed = true;
       // Keep a separate flag so we avoid multiple attempts to handle the same failure
       if (!instance.__hasRedirectedToLogin) {
@@ -58,7 +58,9 @@ instance.interceptors.response.use(
       console.error('Resource not found:', error);
     } else {
       // Handle other errors
-      console.error('API Error:', error);
+      console.error('API Error Full:', error);
+      console.error('API Error Response:', error.response);
+      console.error('API Error Message:', error.message);
     }
     return Promise.reject(error);
   }

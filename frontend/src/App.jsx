@@ -36,7 +36,8 @@ function App() {
           try { localStorage.removeItem("token"); } catch (e) { }
           return null;
         }
-        toast.error(err.response.data.message || "Something went wrong");
+        toast.error(err.response?.data?.message || "Something went wrong");
+        return null;
       }
     },
   });
