@@ -7,7 +7,8 @@
         "frontend"
     ],
     "scripts": {
-        "build": "cd frontend && npm install && npm run build && npx -y make-dir-cli public && npx -y copyfiles -u 2 \"frontend/dist/**/*\" public"
+        "build": "cd frontend && npm install && npm run build && npx -y make-dir-cli public && npx -y copyfiles -u 2 \"frontend/dist/**/*\" public",
+        "vercel-build": "cd frontend && npm install && npm run build && npx -y make-dir-cli public && npx -y copyfiles -u 2 \"frontend/dist/**/*\" public"
     },
     "engines": {
         "node": "20.x"
